@@ -1,402 +1,171 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>GULERIAAASHI - Racing</title>
+
 <style>
-  :root{--bg:#070707;--panel:#0f1720;--accent:#ff3b3b}
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;font-family:Inter,Arial;background:linear-gradient(180deg,#000,#111);color:#fff}
-  .wrap{height:100vh;display:flex;align-items:center;justify-content:center;padding:12px}
-  .game {
-    width:360px; max-width:100%; height:640px; background:linear-gradient(#111,#0b0b0c);
-    border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.7); position:relative; overflow:hidden;
-  }
+    body {
+        margin: 0;
+        overflow: hidden;
+        background: #111;
+        font-family: Arial, sans-serif;
+        color: white;
+        text-align: center;
+    }
 
-  /* intro/overlay */
-  .intro {
-    position:absolute; inset:0; display:flex; flex-direction:column; gap:16px; align-items:center; justify-content:center;
-    background:linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6)); z-index:50; padding:16px;
-  }
-  .title { font-size:28px; letter-spacing:4px; font-weight:800; color:var(--accent); text-shadow:0 4px 20px rgba(255,59,59,0.08) }
-  .subtitle { font-size:12px; opacity:.9; margin-bottom:8px }
-  .options { display:flex; gap:8px; }
-  .opt-btn { padding:10px 12px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.03); cursor:pointer; font-weight:700 }
-  .opt-btn.active{ background:var(--accent); color:#111; transform:scale(1.02) }
-  .start-btn { margin-top:6px; padding:10px 16px; border-radius:10px; border:0; background:var(--accent); color:#111; font-weight:800; cursor:pointer }
-  .small { font-size:12px; opacity:.85 }
+    /* Road */
+    #road {
+        position: absolute;
+        width: 300px;
+        height: 100%;
+        background: #333;
+        left: 50%;
+        transform: translateX(-50%);
+        border-left: 5px dashed white;
+        border-right: 5px dashed white;
+    }
 
-  /* road */
-  .road {
-    position:absolute; left:50%; transform:translateX(-50%);
-    width:62%; height:120%; top:-10%;
-    background: repeating-linear-gradient(
-      to bottom,
-      #3b3b3b 0 40px,
-      #2f2f2f 40px 80px
-    );
-    border-left:12px solid #222;
-    border-right:12px solid #222;
-    box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
-    overflow:hidden;
-  }
-  .center {
-    position:absolute; left:50%; transform:translateX(-50%);
-    width:4px; height:100%; top:0;
-    background-image: linear-gradient(#fff 0 30%, rgba(255,255,255,0) 30% 100%);
-    background-size:100% 60px;
-    opacity:.9;
-  }
+    /* Player Car */
+    #player {
+        width: 40px;
+        height: 70px;
+        background: red;
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 5px;
+    }
 
-  .hud {position:absolute; left:12px; top:12px; z-index:40}
-  .hud .big{font-size:16px; font-weight:700}
-  .hud .small{font-size:12px; opacity:.8}
+    /* Enemy Car */
+    .enemy {
+        width: 40px;
+        height: 70px;
+        background: yellow;
+        position: absolute;
+        top: -100px;
+        border-radius: 5px;
+    }
 
-  .player {
-    position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
-    width:70px; height:120px; z-index:30; border-radius:10px;
-    background: linear-gradient(180deg,#ff4b4b,#b30000); box-shadow:0 6px 18px rgba(0,0,0,0.6);
-    transition:left 0.05s linear, transform .15s;
-  }
-  .player .spoiler{position:absolute;top:8px;left:12px;width:46px;height:14px;background:#111;border-radius:6px;opacity:.6}
+    #startScreen {
+        position: absolute;
+        top: 30%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.7);
+        padding: 20px;
+        border-radius: 10px;
+    }
 
-  .enemy {position:absolute; width:66px; height:110px; border-radius:8px; z-index:25; box-shadow:0 4px 12px rgba(0,0,0,0.6)}
-
-  .controls {position:absolute; bottom:8px; left:50%; transform:translateX(-50%); display:flex; gap:12px; z-index:45}
-  .btn {width:72px;height:52px;border-radius:10px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-weight:700; user-select:none}
-  .btn:active{transform:scale(.97)}
-  .left{width:76px}
-  .right{width:76px}
-
-  .overlay{
-    position:absolute; inset:0; display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.6)); z-index:20; opacity:0; pointer-events:none; transition:opacity .2s;
-    flex-direction:column; gap:12px;
-  }
-  .overlay.show{opacity:1; pointer-events:auto}
-  .overlay h1{margin:0;font-size:22px}
-  .overlay p{margin:0;opacity:.9}
-  .overlay button{margin-top:12px;padding:10px 18px;border-radius:8px;border:0;background:var(--accent);color:#fff;font-weight:700}
-
-  @media (max-width:420px){
-    .player{width:56px;height:96px}
-    .enemy{width:52px;height:84px}
-  }
+    button {
+        padding: 10px 20px;
+        margin: 5px;
+        border: none;
+        background: orange;
+        cursor: pointer;
+        font-size: 18px;
+        border-radius: 5px;
+    }
 </style>
+
 </head>
 <body>
-<div class="wrap">
-  <div class="game" id="game">
-    <!-- Intro Screen -->
-    <div class="intro" id="intro">
-      <div style="text-align:center">
-        <div class="title" id="gname">GULERIAAASHI</div>
-        <div class="subtitle">Choose difficulty:</div>
-      </div>
 
-      <div class="options" id="options">
-        <div class="opt-btn" data-diff="easy">EASY</div>
-        <div class="opt-btn active" data-diff="normal">NORMAL</div>
-        <div class="opt-btn" data-diff="hard">HARD</div>
-      </div>
+<div id="startScreen">
+    <h1 style="color:red; letter-spacing:3px;">GULERIAAASHI</h1>
+    <h3>Choose difficulty:</h3>
 
-      <div style="text-align:center">
-        <button class="start-btn" id="startBtn">Start Game</button>
-        <div class="small" style="margin-top:8px;opacity:.8">Use ◀ ▶ keys or touch buttons to move. ↑ speed up, ↓ brake.</div>
-      </div>
-    </div>
+    <button onclick="setDifficulty(3)">EASY</button>
+    <button onclick="setDifficulty(5)">NORMAL</button>
+    <button onclick="setDifficulty(7)">HARD</button>
 
-    <!-- HUD -->
-    <div class="hud" id="hud">
-      <div class="big" id="score">Score: 0</div>
-      <div class="small" id="speedv">Speed: 1x</div>
-    </div>
-
-    <!-- Road & center line -->
-    <div class="road" id="road">
-      <div class="center" id="centerLine"></div>
-      <!-- enemies appended here -->
-    </div>
-
-    <!-- Player -->
-    <div class="player" id="player">
-      <div class="spoiler"></div>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls" id="controls">
-      <div class="btn left" id="btnLeft">◀</div>
-      <div class="btn" id="btnBrake">🟦</div>
-      <div class="btn right" id="btnRight">▶</div>
-    </div>
-
-    <!-- Game over overlay -->
-    <div class="overlay" id="overlay">
-      <h1 id="overlayTitle">Game Over</h1>
-      <p id="overlayMsg">You crashed!</p>
-      <button id="restartBtn">Restart</button>
-    </div>
-
-  </div>
+    <br><br>
+    <button onclick="startGame()">Start Game</button>
 </div>
 
+<div id="road"></div>
+<div id="player"></div>
+
 <script>
-/* Single-file racing game with intro + 3 difficulty options.
-   Intro: GULERIAAASHI title — choose Easy/Normal/Hard then Start.
-*/
+let speed = 5;
+let player = document.getElementById("player");
+let road = document.getElementById("road");
+let gameRunning = false;
+let enemies = [];
 
-(function(){
-  const intro = document.getElementById('intro');
-  const opts = [...document.querySelectorAll('.opt-btn')];
-  const startBtn = document.getElementById('startBtn');
-  const gameEl = document.getElementById('game');
-  const roadEl = document.getElementById('road');
-  const playerEl = document.getElementById('player');
-  const scoreEl = document.getElementById('score');
-  const speedEl = document.getElementById('speedv');
-  const overlay = document.getElementById('overlay');
-  const restartBtn = document.getElementById('restartBtn');
+function setDifficulty(level) {
+    speed = level;
+}
 
-  // difficulty presets
-  const PRESETS = {
-    easy:   {baseSpeed:2.2, maxSpeed:7, spawnRate:1.8},
-    normal: {baseSpeed:3,   maxSpeed:10, spawnRate:1.2},
-    hard:   {baseSpeed:4.5, maxSpeed:14, spawnRate:0.8}
-  };
+function startGame() {
+    document.getElementById("startScreen").style.display = "none";
+    gameRunning = true;
 
-  let chosen = 'normal';
+    createEnemies();
+    requestAnimationFrame(gameLoop);
+}
 
-  opts.forEach(o=>{
-    o.addEventListener('click', ()=>{
-      opts.forEach(x=>x.classList.remove('active'));
-      o.classList.add('active');
-      chosen = o.dataset.diff || 'normal';
+function createEnemies() {
+    for (let i = 0; i < 3; i++) {
+        let e = document.createElement("div");
+        e.classList.add("enemy");
+        e.style.left = (130 + i * 60) + "px";
+        e.style.top = (-200 * i) + "px";
+        document.body.appendChild(e);
+        enemies.push(e);
+    }
+}
+
+document.addEventListener("keydown", movePlayer);
+
+function movePlayer(e) {
+    if (!gameRunning) return;
+
+    let pos = player.offsetLeft;
+
+    if (e.key === "ArrowLeft" && pos > 120) {
+        player.style.left = (pos - 20) + "px";
+    }
+    if (e.key === "ArrowRight" && pos < 330) {
+        player.style.left = (pos + 20) + "px";
+    }
+}
+
+function gameLoop() {
+    if (!gameRunning) return;
+
+    enemies.forEach(enemy => {
+        let top = enemy.offsetTop;
+
+        if (top > window.innerHeight) {
+            top = -200;
+        }
+
+        enemy.style.top = (top + speed) + "px";
+
+        if (isCollision(player, enemy)) {
+            alert("💥 Crash! Game Over!");
+            location.reload();
+        }
     });
-  });
 
-  // state
-  let state = {
-    speed:3, baseSpeed:3, maxSpeed:11, score:0, running:false,
-    lastTime:0, spawnTimer:0, enemies:[], playerXPercent:50
-  };
+    requestAnimationFrame(gameLoop);
+}
 
-  // compute road metrics
-  function roadMetrics(){ return roadEl.getBoundingClientRect(); }
+function isCollision(a, b) {
+    let aRect = a.getBoundingClientRect();
+    let bRect = b.getBoundingClientRect();
 
-  function initLanes(){
-    const r = roadMetrics();
-    const lanes = 3;
-    const margin = 20;
-    const left = r.left + margin;
-    const right = r.left + r.width - margin;
-    const laneCenterPositions = [];
-    for(let i=0;i<lanes;i++){
-      const x = left + ( (i+0.5) * ( (right-left) / lanes ) );
-      laneCenterPositions.push(x);
-    }
-    state.laneX = laneCenterPositions;
-  }
-
-  function playerLeftPxFromPercent(pct){
-    const r = roadMetrics();
-    const leftBound = r.left + 10;
-    const rightBound = r.left + r.width - playerEl.offsetWidth - 10;
-    const rel = (pct/100);
-    return leftBound + (rel * (rightBound - leftBound));
-  }
-
-  function shadeColor(hex, percent) {
-    const f = hex.slice(1), t = percent<0?0:255, p = Math.abs(percent)/100;
-    const R = parseInt(f.substring(0,2),16), Gc = parseInt(f.substring(2,4),16), B = parseInt(f.substring(4,6),16);
-    const Rn = Math.round((t - R) * p) + R;
-    const Gn = Math.round((t - Gc) * p) + Gc;
-    const Bn = Math.round((t - B) * p) + B;
-    return rgb(${Rn},${Gn},${Bn});
-  }
-
-  // spawn enemy
-  function spawnEnemy(){
-    const e = document.createElement('div');
-    e.classList.add('enemy');
-    const laneIndex = Math.floor(Math.random()*state.laneX.length);
-    const laneCenter = state.laneX[laneIndex];
-    const colors = ['#1e90ff','#ffcc00','#22c55e','#ff6b6b','#a855f7'];
-    const c = colors[Math.floor(Math.random()*colors.length)];
-    e.style.background = linear-gradient(180deg, ${c}, ${shadeColor(c,-20)});
-    const r = roadMetrics();
-    e.style.left = (laneCenter - r.left - 33) + 'px';
-    e.style.top = -140 + 'px';
-    const vy = state.speed + 1 + Math.random()*1.6;
-    const enemy = {el:e, vy, laneIndex};
-    state.enemies.push(enemy);
-    roadEl.appendChild(e);
-  }
-
-  function cleanupEnemies(){
-    state.enemies = state.enemies.filter(en=>{
-      const top = parseFloat(en.el.style.top);
-      if(top > roadMetrics().height + 200){
-        en.el.remove();
-        return false;
-      }
-      return true;
-    });
-  }
-
-  // input handling
-  const input = {left:false,right:false,up:false,down:false};
-  window.addEventListener('keydown', e=>{
-    if(e.key === 'ArrowLeft') input.left = true;
-    if(e.key === 'ArrowRight') input.right = true;
-    if(e.key === 'ArrowUp') input.up = true;
-    if(e.key === 'ArrowDown') input.down = true;
-  });
-  window.addEventListener('keyup', e=>{
-    if(e.key === 'ArrowLeft') input.left = false;
-    if(e.key === 'ArrowRight') input.right = false;
-    if(e.key === 'ArrowUp') input.up = false;
-    if(e.key === 'ArrowDown') input.down = false;
-  });
-  document.getElementById('btnLeft').addEventListener('touchstart', ()=>input.left=true);
-  document.getElementById('btnLeft').addEventListener('touchend', ()=>input.left=false);
-  document.getElementById('btnRight').addEventListener('touchstart', ()=>input.right=true);
-  document.getElementById('btnRight').addEventListener('touchend', ()=>input.right=false);
-  document.getElementById('btnBrake').addEventListener('touchstart', ()=>input.down=true);
-  document.getElementById('btnBrake').addEventListener('touchend', ()=>input.down=false);
-
-  // collision
-  function checkCollision(){
-    const pRect = playerEl.getBoundingClientRect();
-    for(const en of state.enemies){
-      const r = en.el.getBoundingClientRect();
-      if(!(pRect.right < r.left || pRect.left > r.right || pRect.bottom < r.top || pRect.top > r.bottom)){
-        return true;
-      }
-    }
-    return false;
-  }
-
-  // main update loop
-  function update(ts){
-    if(!state.lastTime) state.lastTime = ts;
-    const dt = (ts - state.lastTime)/1000; state.lastTime = ts;
-    if(!state.running) return;
-
-    // speed changes based on input
-    if(input.up) state.speed = Math.min(state.maxSpeed, state.speed + 8*dt);
-    else if(input.down) state.speed = Math.max(0.7, state.speed - 12*dt);
-    else state.speed = Math.max(state.baseSpeed, state.speed - 1*dt);
-
-    if(input.left) state.playerXPercent -= 70 * dt * (state.speed/4);
-    if(input.right) state.playerXPercent += 70 * dt * (state.speed/4);
-    state.playerXPercent = Math.max(5, Math.min(95, state.playerXPercent));
-
-    // position player
-    const left = playerLeftPxFromPercent(state.playerXPercent) - roadMetrics().left;
-    playerEl.style.left = left + 'px';
-
-    // move enemies
-    for(const en of state.enemies){
-      const top = parseFloat(en.el.style.top || 0);
-      en.el.style.top = (top + en.vy * (state.speed/3) * (60*dt)) + 'px';
-      en.el.style.left = (parseFloat(en.el.style.left) + Math.sin(ts/4000 + en.laneIndex)*0.2) + 'px';
-    }
-
-    // spawn
-    state.spawnTimer += dt * (state.speed/3);
-    const spawnThreshold = Math.max(0.45, PRESETS[chosen].spawnRate - state.speed*0.06);
-    if(state.spawnTimer > spawnThreshold){
-      state.spawnTimer = 0;
-      spawnEnemy();
-    }
-
-    // update score & hud
-    state.score += Math.round(10 * state.speed * dt);
-    scoreEl.textContent = 'Score: ' + state.score;
-    speedEl.textContent = 'Speed: ' + state.speed.toFixed(1) + 'x';
-
-    // collision
-    if(checkCollision()){
-      gameOver();
-      return;
-    }
-
-    cleanupEnemies();
-
-    const center = document.getElementById('centerLine');
-    const bgY = ((Date.now()/6) * state.speed/3) % 60;
-    center.style.backgroundPosition = 0 ${bgY}px;
-
-    requestAnimationFrame(update);
-  }
-
-  function gameOver(){
-    state.running = false;
-    overlay.classList.add('show');
-    document.getElementById('overlayTitle').textContent = 'Game Over';
-    document.getElementById('overlayMsg').textContent = 'Score: ' + state.score;
-  }
-
-  function resetGame(){
-    for(const en of state.enemies) en.el.remove();
-    state.enemies = [];
-    state.score = 0;
-    state.speed = state.baseSpeed;
-    state.running = true;
-    state.playerXPercent = 50;
-    overlay.classList.remove('show');
-    state.lastTime = 0;
-    state.spawnTimer = 0;
-    requestAnimationFrame(update);
-  }
-
-  // start selected difficulty & begin
-  startBtn.addEventListener('click', ()=>{
-    // set presets
-    const p = PRESETS[chosen] || PRESETS.normal;
-    state.baseSpeed = p.baseSpeed;
-    state.speed = p.baseSpeed;
-    state.maxSpeed = p.maxSpeed;
-    state.score = 0;
-    // hide intro
-    intro.style.display = 'none';
-    initAndRun();
-  });
-
-  restartBtn.addEventListener('click', ()=>{
-    // keep same difficulty, reset
-    resetGame();
-  });
-
-  // initialize lanes and first enemies
-  function initAndRun(){
-    initLanes();
-    // spawn couple enemies to start
-    for(let i=0;i<2;i++) spawnEnemy();
-    playerEl.style.left = (playerLeftPxFromPercent(state.playerXPercent) - roadMetrics().left) + 'px';
-    state.running = true;
-    requestAnimationFrame(update);
-  }
-
-  window.addEventListener('resize', ()=>{
-    initLanes();
-    playerEl.style.left = (playerLeftPxFromPercent(state.playerXPercent) - roadMetrics().left) + 'px';
-  });
-
-  // small label typing effect for the title (optional)
-  (function animateTitle(){
-    const lbl = document.getElementById('gname'); const text = 'GULERIAAASHI';
-    lbl.textContent = '';
-    let i=0;
-    const id = setInterval(()=>{
-      lbl.textContent += text[i++]||'';
-      if(i>text.length) { clearInterval(id); lbl.textContent = text; }
-    },60);
-  })();
-
-  // done - keep intro visible until start
-})();
+    return !(
+        aRect.bottom < bRect.top ||
+        aRect.top > bRect.bottom ||
+        aRect.right < bRect.left ||
+        aRect.left > bRect.right
+    );
+}
 </script>
+
 </body>
 </html>
